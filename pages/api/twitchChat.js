@@ -1,4 +1,40 @@
 const tmi = require('tmi.js');
+const request = require('request');
+
+//spotify authentication
+var client_id = '3781b1dd1de44f3980efe48eef666821'; // Your client id
+var client_secret = '778fafad8b404087aec0281c9e157266'; // Your secret
+var redirect_uri = 'http://localhost'; // Your redirect uri
+
+// your application requests authorization
+var authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    headers: {
+      'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
+    },
+    form: {
+      grant_type: 'client_credentials'
+    },
+    json: true
+  };
+  
+  request.post(authOptions, function(error, response, body) {
+    if (!error && response.statusCode === 200) {
+  
+      // use the access token to access the Spotify Web API
+      var token = body.access_token;
+      var options = {
+        url: 'https://api.spotify.com/v1/users/onenewera',
+        headers: {
+          'Authorization': 'Bearer ' + token
+        },
+        json: true
+      };
+      request.get(options, function(error, response, body) {
+        console.log(body);
+      });
+    }
+  });
 
 const client = new tmi.Client({
     options: { debug: true },
@@ -45,8 +81,7 @@ function containsMember(member, list) {
     return false;
 }
 
-
-// Add/update likes for current song playing using the !like command and add it to the member object
+// Add/update likes for current song (Actually right now it's just the user not the song itself - find a way to relate those) playing using the !like command and add it to the member object
 client.on('message', (channel, tags, message, self) => {
 
     if(message.toLowerCase() === '!like') {
@@ -56,22 +91,19 @@ client.on('message', (channel, tags, message, self) => {
 
             for (const member of userList) {
                 if (member.userName === tags.username) {
-                  member.likes += 1;
-              
-                  break;
+                    member.likes += 1;
+                    break;
                 }
-              }
+            }
             
             client.say(channel, `@${tags.username} exists in userList. Updating like number...`);
-            console.log('User exists in userList. Updating like number...');
-            // ChatMember.likes += 1;
+            console.log('User exists in userList. Updating like number...');            
         } else {
             userList.push(
                 new ChatMember(0, 'profilePictureURL', tags.username, tags.color)
             );
             client.say(channel, `Adding user to list...`);
             console.log('Adding user to list...');
-            // userList[i].likes = +1
             client.say(channel, `Updating new user likes`);
             console.log('Updating new user likes')
         }
